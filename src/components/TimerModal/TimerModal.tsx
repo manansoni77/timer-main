@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Clock } from 'lucide-react';
-import { useTimerStore } from '../store/useTimerStore';
-import { validateTimerForm } from '../utils/validation';
-import { PrimaryButton, SecondaryButton } from './Buttons';
+import { useTimerStore } from '../../store/useTimerStore';
+import { validateTimerForm } from '../../utils/validation';
+import { Timer } from '../../types/timer';
+import { PrimaryButton, SecondaryButton } from '../Buttons';
 
-interface AddTimerModalProps {
+interface EditTimerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  timer?: Timer;
 }
 
-export const AddTimerModal: React.FC<AddTimerModalProps> = ({
+export const TimerModal: React.FC<EditTimerModalProps> = ({
   isOpen,
   onClose,
+  timer
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -25,7 +28,23 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({
     seconds: false,
   });
 
-  const { addTimer } = useTimerStore();
+  const { editTimer, addTimer } = useTimerStore();
+
+  useEffect(() => {
+    if (isOpen && timer) {
+      setTitle(timer.title);
+      setDescription(timer.description);
+      setHours(Math.floor(timer.duration / 3600));
+      setMinutes(Math.floor((timer.duration % 3600) / 60));
+      setSeconds(timer.duration % 60);
+      setTouched({
+        title: false,
+        hours: false,
+        minutes: false,
+        seconds: false,
+      });
+    }
+  }, [isOpen, timer]);
 
   if (!isOpen) return null;
 
@@ -38,30 +57,32 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({
 
     const totalSeconds = hours * 3600 + minutes * 60 + seconds;
 
-    addTimer({
-      title: title.trim(),
-      description: description.trim(),
-      duration: totalSeconds,
-      remainingTime: totalSeconds,
-      isRunning: false,
-    });
+    if (timer) {
+      editTimer(timer.id, {
+        title: title.trim(),
+        description: description.trim(),
+        duration: totalSeconds,
+      });
+    } else {
+      addTimer({
+        title: title.trim(),
+        description: description.trim(),
+        duration: totalSeconds,
+        remainingTime: totalSeconds,
+        isRunning: false,
+      });
+    }
 
+    handleClose();
+  };
+
+  const handleClose = () => {
     onClose();
     setTitle('');
     setDescription('');
     setHours(0);
     setMinutes(0);
     setSeconds(0);
-    setTouched({
-      title: false,
-      hours: false,
-      minutes: false,
-      seconds: false,
-    });
-  };
-
-  const handleClose = () => {
-    onClose();
     setTouched({
       title: false,
       hours: false,
@@ -79,7 +100,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-600" />
-            <h2 className="text-xl font-semibold">Add New Timer</h2>
+            <h2 className="text-xl font-semibold">{timer ? 'Edit Timer' : 'Add Timer'}</h2>
           </div>
           <button
             onClick={handleClose}
@@ -100,12 +121,11 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({
               onChange={(e) => setTitle(e.target.value)}
               onBlur={() => setTouched({ ...touched, title: true })}
               maxLength={50}
-              className={`
-                w-full rounded-lg focus:border-blue-500  px-3 py-2.5 text-sm font-normal text-blue-gray-700 outline outline-0 border ${
-                  touched.title && !isTitleValid
-                    ? 'border-red-500'
-                    : 'border-gray-300'
-                }`}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                touched.title && !isTitleValid
+                  ? 'border-red-500'
+                  : 'border-gray-300'
+              }`}
               placeholder="Enter timer title"
             />
             {touched.title && !isTitleValid && (
@@ -126,7 +146,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full rounded-lg focus:border-blue-500  px-3 py-2.5 text-sm font-normal text-blue-gray-700 outline outline-0 border "
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter timer description (optional)"
             />
           </div>
@@ -149,7 +169,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({
                     setHours(Math.min(23, parseInt(e.target.value) || 0))
                   }
                   onBlur={() => setTouched({ ...touched, hours: true })}
-                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2 rounded-lg focus:border-blue-500  text-sm font-normal text-blue-gray-700 outline outline-0 border "
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div>
@@ -165,7 +185,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({
                     setMinutes(Math.min(59, parseInt(e.target.value) || 0))
                   }
                   onBlur={() => setTouched({ ...touched, minutes: true })}
-                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2 rounded-lg focus:border-blue-500   text-sm font-normal text-blue-gray-700 outline outline-0 border "
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div>
@@ -181,7 +201,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({
                     setSeconds(Math.min(59, parseInt(e.target.value) || 0))
                   }
                   onBlur={() => setTouched({ ...touched, seconds: true })}
-                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2 rounded-lg focus:border-blue-500   text-sm font-normal text-blue-gray-700 outline outline-0 border 0"
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -201,7 +221,7 @@ export const AddTimerModal: React.FC<AddTimerModalProps> = ({
               isDisabled={!isTitleValid || !isTimeValid}
               type="submit"
             >
-              Add Timer
+                {timer ? 'Save & Close' : 'Add Timer'}
             </PrimaryButton>
           </div>
         </form>
