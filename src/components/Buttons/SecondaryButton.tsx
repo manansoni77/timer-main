@@ -1,6 +1,6 @@
-interface SecondaryButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface SecondaryButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   handleClick: () => void;
+  children: React.ReactNode;
 }
 
 const SecondaryButton: React.FC<SecondaryButtonProps> = ({
